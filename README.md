@@ -1,4 +1,4 @@
-# Go-Biz-Admin - 智能业务管理系统
+# 仙林云 - idc业务管理系统
 
 <div align="center">
 
@@ -256,9 +256,7 @@ POST /api/orders/products # 创建产品订单
 
 ## 📞 联系方式
 
-- 项目地址: [https://github.com/yourusername/go-biz-admin](https://github.com/yourusername/go-biz-admin)
-- Issues: [https://github.com/yourusername/go-biz-admin/issues](https://github.com/yourusername/go-biz-admin/issues)
-- 邮箱: your-email@example.com
+- 邮箱: yangxiaogiao@163.com
 
 ## 🙏 致谢
 
@@ -273,5 +271,5 @@ POST /api/orders/products # 创建产品订单
 ---
 
 <p align="center">
-  Made with ❤️ by Go-Biz-Admin Team
+  Made with ❤️ by xianlincloud Team
 </p>
