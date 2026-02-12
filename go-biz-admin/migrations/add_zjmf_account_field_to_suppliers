@@ -1,0 +1,19 @@
+package migrations
+
+import (
+	"go-biz-admin/config"
+	"go-biz-admin/models"
+)
+
+// AddZJMFAccountFieldToSuppliers 添加智简魔方账户字段到供应商表
+func AddZJMFAccountFieldToSuppliers() error {
+	db := config.DB
+
+	// 使用 AutoMigrate 来添加新字段
+	result := db.AutoMigrate(&models.Supplier{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}

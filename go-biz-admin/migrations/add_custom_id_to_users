@@ -1,0 +1,39 @@
+package migrations
+
+import (
+	"go-biz-admin/config"
+	"go-biz-admin/models"
+)
+
+func AddCustomIDToUsers() error {
+	db := config.DB
+
+	// 尝试添加uuid列，如果列已存在会报错但可以忽略
+	db.Exec("ALTER TABLE users ADD COLUMN uuid VARCHAR(36) UNIQUE")
+
+	// 尝试添加custom_id列，如果列已存在会报错但可以忽略
+	db.Exec("ALTER TABLE users ADD COLUMN custom_id INT DEFAULT 10000")
+
+	// 获取所有用户并按ID排序
+	var users []models.User
+	if err := db.Order("ID ASC").Find(&users).Error; err != nil {
+		return err
+	}
+
+	// 为没有自定义ID的用户分配ID，从10000开始
+	for i, user := range users {
+		var updatedUser models.User
+		if err := db.Where("id = ?", user.ID).First(&updatedUser).Error; err != nil {
+			return err
+		}
+
+		if updatedUser.CustomID == 0 {
+			updatedUser.CustomID = uint(10000 + i)
+			if err := db.Save(&updatedUser).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
