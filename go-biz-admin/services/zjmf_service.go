@@ -89,10 +89,6 @@ func (s *ZJMFService) makeRequest(method, endpoint string, payload interface{}) 
 
 	client := &http.Client{
 		Timeout: 30 * time.Second,
-		// 禁止自动重定向，我们需要手动处理
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
 	}
 
 	resp, err := client.Do(req)
@@ -123,15 +119,39 @@ func (s *ZJMFService) makeRequest(method, endpoint string, payload interface{}) 
 	contentType := resp.Header.Get("Content-Type")
 	if contentType != "" && (contentType == "text/html" || contentType == "text/html; charset=UTF-8") {
 		content := string(body)
-		if len(content) > 200 {
-			content = content[:200]
+		if len(content) > 500 {
+			content = content[:500]
 		}
-		fmt.Printf("收到HTML响应，可能是错误页面: %s\n", content)
+		fmt.Printf("收到HTML响应，内容: %s\n", content)
 
 		// 检查是否是JavaScript重定向
 		if strings.Contains(content, "window.location.href") {
-			fmt.Printf("检测到JavaScript重定向\n")
-			return nil, fmt.Errorf("API requires JavaScript redirect handling, status: %d", resp.StatusCode)
+			fmt.Printf("检测到JavaScript重定向，尝试处理...\n")
+
+			// 提取 yxd_token
+			var yxdToken string
+			tokenRe := regexp.MustCompile(`yxd_token=([a-f0-9]+)`)
+			tokenMatches := tokenRe.FindStringSubmatch(content)
+			if len(tokenMatches) > 1 {
+				yxdToken = tokenMatches[1]
+				fmt.Printf("提取到 yxd_token: %s\n", yxdToken)
+			}
+
+			// 提取重定向路径
+			hrefRe := regexp.MustCompile(`window\.location\.href='([^']+)'`)
+			hrefMatches := hrefRe.FindStringSubmatch(content)
+			if len(hrefMatches) > 1 {
+				redirectPath := hrefMatches[1]
+				fmt.Printf("提取到重定向路径: %s\n", redirectPath)
+
+				// 构造带 cookie 的新请求
+				if yxdToken != "" {
+					cookie := fmt.Sprintf("yxd_token=%s", yxdToken)
+					return s.makeRequestWithCookie(method, redirectPath, payload, cookie)
+				}
+			}
+
+			return nil, fmt.Errorf("无法提取JavaScript重定向信息")
 		}
 
 		return nil, fmt.Errorf("received HTML response instead of JSON, status: %d", resp.StatusCode)
@@ -739,10 +759,6 @@ func (s *ZJMFService) makeRequestWithCookie(method, endpoint string, payload int
 
 	client := &http.Client{
 		Timeout: 30 * time.Second,
-		// 禁止自动重定向，我们需要手动处理
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
 	}
 
 	resp, err := client.Do(req)
@@ -773,15 +789,39 @@ func (s *ZJMFService) makeRequestWithCookie(method, endpoint string, payload int
 	contentType := resp.Header.Get("Content-Type")
 	if contentType != "" && (contentType == "text/html" || contentType == "text/html; charset=UTF-8") {
 		content := string(body)
-		if len(content) > 200 {
-			content = content[:200]
+		if len(content) > 500 {
+			content = content[:500]
 		}
-		fmt.Printf("收到HTML响应，可能是错误页面: %s\n", content)
+		fmt.Printf("收到HTML响应，内容: %s\n", content)
 
 		// 检查是否是JavaScript重定向
 		if strings.Contains(content, "window.location.href") {
-			fmt.Printf("检测到JavaScript重定向\n")
-			return nil, fmt.Errorf("API requires JavaScript redirect handling, status: %d", resp.StatusCode)
+			fmt.Printf("检测到JavaScript重定向，尝试处理...\n")
+
+			// 提取 yxd_token
+			var yxdToken string
+			tokenRe := regexp.MustCompile(`yxd_token=([a-f0-9]+)`)
+			tokenMatches := tokenRe.FindStringSubmatch(content)
+			if len(tokenMatches) > 1 {
+				yxdToken = tokenMatches[1]
+				fmt.Printf("提取到 yxd_token: %s\n", yxdToken)
+			}
+
+			// 提取重定向路径
+			hrefRe := regexp.MustCompile(`window\.location\.href='([^']+)'`)
+			hrefMatches := hrefRe.FindStringSubmatch(content)
+			if len(hrefMatches) > 1 {
+				redirectPath := hrefMatches[1]
+				fmt.Printf("提取到重定向路径: %s\n", redirectPath)
+
+				// 构造带 cookie 的新请求
+				if yxdToken != "" {
+					cookie := fmt.Sprintf("yxd_token=%s", yxdToken)
+					return s.makeRequestWithCookie(method, redirectPath, payload, cookie)
+				}
+			}
+
+			return nil, fmt.Errorf("无法提取JavaScript重定向信息")
 		}
 
 		return nil, fmt.Errorf("received HTML response instead of JSON, status: %d", resp.StatusCode)
